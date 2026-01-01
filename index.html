@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster Enterprise v4.9.1 - EMSI Pro BI</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .nav-active { @apply bg-indigo-600 text-white shadow-lg shadow-indigo-200; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        /* Animation pour les alertes critiques */
+        .critical-glow { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
+</head>
+
+<body class="bg-slate-50 h-screen overflow-hidden flex text-slate-900">
+
+    <div id="toast" class="fixed top-6 right-6 z-[200] transform translate-x-[150%] transition-transform duration-500">
+        <div id="toastContent" class="px-8 py-4 rounded-2xl shadow-2xl font-bold flex items-center gap-3 text-white"></div>
+    </div>
+
+    <div id="loginPage" class="fixed inset-0 z-[150] bg-slate-950 flex items-center justify-center">
+        <div class="bg-white p-12 rounded-[2.5rem] shadow-2xl w-full max-w-md">
+            <div class="text-center mb-10">
+                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 font-black">S</div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">StockMaster</h1>
+                <p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">EMSI Enterprise v4.9.1</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <input type="text" id="userInput" placeholder="Identifiant (admin)" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 transition">
+                <input type="password" id="passInput" placeholder="Mot de passe (admin)" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 transition">
+                <button type="submit" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition uppercase text-xs">Connexion</button>
+            </form>
+        </div>
+    </div>
+
+    <aside id="sidebar" class="w-80 bg-slate-900 text-white flex flex-col hidden shadow-2xl">
+        <div class="p-8 border-b border-slate-800 tracking-tighter flex flex-col">
+            <span class="text-2xl font-black italic">STOCK<span class="text-indigo-500">MASTER</span></span>
+        </div>
+        <nav class="flex-1 p-6 space-y-2 overflow-y-auto mt-4">
+            <button onclick="router('dashboard')" data-nav="dashboard" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">📊 Dashboard</button>
+            <button onclick="router('produits')" data-nav="produits" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm">📦 Produits & Lots</button>
+            <button onclick="router('fournisseurs')" data-nav="fournisseurs" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm">🤝 SRM Fournisseurs</button>
+            <button onclick="router('mouvements')" data-nav="mouvements" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm font-bold text-amber-400">🔄 Audit & Traçabilité</button>
+        </nav>
+        <div class="p-8 border-t border-slate-800">
+            <button onclick="logout()" class="w-full bg-red-500/10 text-red-400 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-red-500 hover:text-white transition">Déconnexion</button>
+        </div>
+    </aside>
+
+    <main id="mainApp" class="flex-1 flex flex-col hidden overflow-hidden">
+        <header class="h-24 bg-white border-b flex items-center justify-between px-12 z-10 glass">
+            <h2 id="pageTitle" class="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Dashboard</h2>
+            <div class="flex items-center gap-6">
+                <input type="text" id="globalSearch" onkeyup="searchTable()" placeholder="Rechercher..." class="bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-2.5 text-sm w-72 outline-none focus:border-indigo-300">
+                <div class="text-right border-l pl-6">
+                    <p id="currentUserDisplay" class="text-sm font-black leading-none"></p>
+                    <p id="currentRoleDisplay" class="text-[9px] font-bold text-indigo-500 uppercase mt-1"></p>
+                </div>
+            </div>
+        </header>
+        <div id="viewArea" class="p-12 overflow-y-auto flex-1"></div>
+    </main>
+
+    <div id="crudModal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center p-6 z-[160] backdrop-blur-sm">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg p-10">
+            <h3 id="modalTitle" class="text-2xl font-black mb-8">Action</h3>
+            <form id="crudForm" class="space-y-4">
+                <div id="dynamicInputs" class="space-y-4"></div>
+                <div class="flex justify-end gap-4 mt-10">
+                    <button type="button" onclick="closeModal()" class="font-bold text-slate-400">Annuler</button>
+                    <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-2xl shadow-xl">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        "use strict";
+
+        // --- 1. CONFIGURATION & DONNÉES ---
+        const DB_KEY = "sm_ent_v491"; // Changement de clé pour éviter les conflits
+        
+        const initialDB = {
+            produits: [
+                { id: 1, sku: "DELL-XPS", name: "Dell XPS 13", price: 15000, qty: 10, min: 5, sold: 12, batch: "LOT-001", supplierId: 1, status: 'actif', expiry: '2026-12-01' },
+                { id: 2, sku: "MAC-M2", name: "MacBook Air", price: 17000, qty: 2, min: 5, sold: 8, batch: "LOT-002", supplierId: 2, status: 'actif', expiry: '2027-01-01' }
+            ],
+            fournisseurs: [
+                { id: 1, name: "Dell Maghreb", reliability: 95, leadTime: 4 },
+                { id: 2, name: "Apple Morocco", reliability: 88, leadTime: 10 }
+            ],
+            mouvements: [],
+            users: [{ id: 1, user: "admin", pass: "admin", role: "ADMIN" }],
+            currentUser: null
+        };
+
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || initialDB;
+
+        const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
+
+        const notify = (msg, type='success') => {
+            const t = document.getElementById('toast');
+            const c = document.getElementById('toastContent');
+            c.innerText = msg;
+            c.className = `${type === 'success' ? 'bg-indigo-600' : 'bg-red-600'} px-8 py-4 rounded-2xl shadow-2xl font-bold text-white`;
+            t.classList.remove('translate-x-[150%]');
+            setTimeout(() => t.classList.add('translate-x-[150%]'), 3000);
+        };
+
+        const logAction = (type, details, sku = "N/A") => {
+            db.mouvements.unshift({ id: Date.now(), date: new Date().toLocaleString(), user: db.currentUser.user, type, details, sku });
+            save();
+        };
+
+        // --- 2. AUTHENTIFICATION ---
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('userInput').value;
+            const p = document.getElementById('passInput').value;
+            const found = db.users.find(x => x.user === u && x.pass === p);
+            if (found) {
+                db.currentUser = found;
+                initApp();
+            } else { notify("Identifiants incorrects", "error"); }
+        };
+
+        function logout() { db.currentUser = null; location.reload(); }
+
+        function initApp() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('currentUserDisplay').innerText = db.currentUser.user;
+            document.getElementById('currentRoleDisplay').innerText = db.currentUser.role;
+            router('dashboard');
+        }
+
+        // --- 3. ROUTEUR ---
+        function router(page) {
+            const v = document.getElementById('viewArea');
+            document.getElementById('pageTitle').innerText = page.toUpperCase();
+            document.querySelectorAll('.nav-link').forEach(btn => {
+                btn.classList.toggle('nav-active', btn.dataset.nav === page);
+            });
+            v.innerHTML = "";
+            if(page === 'dashboard') renderDashboard(v);
+            else if(page === 'produits') renderProducts(v);
+            else if(page === 'fournisseurs') renderSuppliers(v);
+            else if(page === 'mouvements') renderMouvements(v);
+        }
+
+        // --- 4. DASHBOARD ---
+        function renderDashboard(c) {
+            const totalVal = db.produits.reduce((acc, p) => acc + (p.price * p.qty), 0);
+            const critItems = db.produits.filter(p => p.qty <= p.min);
+            const ruptureRate = ((critItems.length / db.produits.length) * 100).toFixed(1);
+
+            c.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-indigo-500">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur Stock</p>
+                        <h4 class="text-3xl font-black mt-2">${totalVal.toLocaleString()} DH</h4>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-red-500 ${critItems.length > 0 ? 'critical-glow' : ''}">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux de Rupture</p>
+                        <h4 class="text-3xl font-black text-red-600 mt-2">${ruptureRate}%</h4>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-emerald-500">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Ventes</p>
+                        <h4 class="text-3xl font-black text-emerald-600 mt-2">${db.produits.reduce((a,b)=>a+b.sold,0)} Units</h4>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[400px]">
+                    <div class="bg-white p-10 rounded-[2.5rem] shadow-sm"><canvas id="ch1"></canvas></div>
+                    <div class="bg-white p-10 rounded-[2.5rem] shadow-sm"><canvas id="ch2"></canvas></div>
+                </div>`;
+            
+            setTimeout(() => {
+                new Chart(document.getElementById('ch1'), { type:'bar', data: { labels: db.produits.map(p=>p.sku), datasets:[{label:'Stock', data: db.produits.map(p=>p.qty), backgroundColor:'#6366f1'}] } });
+                new Chart(document.getElementById('ch2'), { type:'doughnut', data: { labels: ['Sain','Alerte'], datasets:[{data:[db.produits.length - critItems.length, critItems.length], backgroundColor:['#10b981','#ef4444']}] } });
+            }, 100);
+        }
+
+        // --- 5. PRODUITS ---
+        function renderProducts(c) {
+            c.innerHTML = `
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="font-black text-slate-800 text-xl italic uppercase underline decoration-indigo-200">Catalogue Produits</h3>
+                        <button onclick="openAddProduct()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black text-xs shadow-lg shadow-indigo-100">+ Nouveau Lot</button>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b">
+                            <tr><th class="p-4">SKU/Lot</th><th class="p-4">Stock</th><th class="p-4">Vendus</th><th class="p-4">Prix</th><th class="p-4">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            ${db.produits.map(p => `
+                                <tr class="border-b text-sm transition hover:bg-slate-50">
+                                    <td class="p-4"><p class="font-black">${p.sku}</p><p class="text-[10px] text-slate-400">${p.batch}</p></td>
+                                    <td class="p-4"><span class="px-3 py-1 rounded-full font-black text-[10px] ${p.qty <= p.min ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${p.qty}</span></td>
+                                    <td class="p-4 font-bold">${p.sold}</td>
+                                    <td class="p-4 font-bold text-slate-400">${p.price.toLocaleString()} DH</td>
+                                    <td class="p-4 space-x-2">
+                                        <button onclick="sellOne(${p.id})" class="text-indigo-600 font-black text-[10px] uppercase">Vendre</button>
+                                        <button onclick="deleteProd(${p.id})" class="text-red-400 font-black text-[10px] uppercase">Suppr.</button>
+                                    </td>
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        }
+
+        function sellOne(id) {
+            const p = db.produits.find(x => x.id === id);
+            if(p.qty <= 0) return notify("Rupture de stock !", "error");
+            p.qty--; p.sold++;
+            logAction("VENTE", "Sortie 1 unité", p.sku);
+            router('produits'); notify("Vendu !");
+        }
+
+        function openAddProduct() {
+            const inputs = document.getElementById('dynamicInputs');
+            inputs.innerHTML = `
+                <input type="text" id="p_sku" placeholder="SKU" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
+                <input type="text" id="p_batch" placeholder="Lot" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
+                <input type="number" id="p_qty" placeholder="Quantité" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
+                <input type="number" id="p_price" placeholder="Prix" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
+                <input type="number" id="p_min" placeholder="Seuil" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">`;
+            document.getElementById('crudModal').classList.remove('hidden');
+            document.getElementById('crudForm').onsubmit = (e) => {
+                e.preventDefault();
+                db.produits.push({
+                    id: Date.now(), sku: document.getElementById('p_sku').value,
+                    batch: document.getElementById('p_batch').value,
+                    qty: parseInt(document.getElementById('p_qty').value),
+                    price: parseInt(document.getElementById('p_price').value),
+                    min: parseInt(document.getElementById('p_min').value),
+                    sold: 0, status: 'actif'
+                });
+                logAction("AJOUT", "Entrée nouveau produit");
+                closeModal(); router('produits');
+            };
+        }
+
+        // --- 6. FOURNISSEURS ---
+        function renderSuppliers(c) {
+            c.innerHTML = `
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
+                    <h3 class="font-black text-slate-800 uppercase text-xl mb-10 italic">Performance Fournisseurs</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        ${db.fournisseurs.map(f => `
+                            <div class="p-8 border-2 rounded-3xl">
+                                <h4 class="text-lg font-black">${f.name}</h4>
+                                <p class="text-xs text-slate-400 mt-2 uppercase font-black">Fiabilité : ${f.reliability}%</p>
+                                <div class="mt-4 bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-indigo-600 h-full" style="width:${f.reliability}%"></div>
+                                </div>
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        // --- 7. MOUVEMENTS ---
+        function renderMouvements(c) {
+            c.innerHTML = `
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
+                    <h3 class="font-black text-slate-800 uppercase text-xl mb-10 italic">Audit Système</h3>
+                    <div class="space-y-3">
+                        ${db.mouvements.map(m => `
+                            <div class="p-4 bg-slate-50 rounded-2xl flex justify-between items-center border-l-4 ${m.type === 'VENTE' ? 'border-red-500' : 'border-indigo-500'}">
+                                <div><p class="text-xs font-black">${m.date}</p><p class="text-sm font-bold">${m.type} : ${m.details}</p></div>
+                                <span class="text-[10px] font-black uppercase text-indigo-600">${m.sku}</span>
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        function closeModal() { document.getElementById('crudModal').classList.add('hidden'); }
+        function searchTable() {
+            const v = document.getElementById('globalSearch').value.toLowerCase();
+            document.querySelectorAll("tbody tr").forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none");
+        }
+        function deleteProd(id) { if(confirm("Supprimer ?")) { db.produits = db.produits.filter(p=>p.id!==id); save(); router('produits'); } }
+
+    </script>
+</body>
+</html>
