@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+
+/* Style de base */
+body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    transition: all 0.3s ease; 
+}
+
+/* État actif du menu */
+.nav-active { 
+    background-color: #4f46e5; 
+    color: white; 
+    box-shadow: 0 10px 15px -3px rgba(165, 180, 252, 0.4); 
+}
+
+/* Effet Verre (Frosted Glass) */
+.glass { 
+    background: rgba(255, 255, 255, 0.95); 
+    backdrop-filter: blur(10px); 
+}
+
+/* Animation d'apparition */
+.animate-fade { 
+    animation: fadeIn 0.3s ease-in-out; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(5px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Support de la lecture de droite à gauche (Arabe) */
+[dir="rtl"] { 
+    text-align: right; 
+}
