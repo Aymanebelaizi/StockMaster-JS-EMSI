@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockMaster Enterprise v4.9.1 - EMSI Pro BI</title>
+    <title>StockMaster Pro - EMSI Excellence v4.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,286 +12,366 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s ease; }
         .nav-active { @apply bg-indigo-600 text-white shadow-lg shadow-indigo-200; }
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        /* Animation pour les alertes critiques */
-        .critical-glow { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .animate-fade { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        [dir="rtl"] { text-align: right; }
     </style>
 </head>
 
-<body class="bg-slate-50 h-screen overflow-hidden flex text-slate-900">
+<body class="bg-slate-50 h-screen overflow-hidden flex text-slate-900" id="appBody">
 
     <div id="toast" class="fixed top-6 right-6 z-[200] transform translate-x-[150%] transition-transform duration-500">
-        <div id="toastContent" class="px-8 py-4 rounded-2xl shadow-2xl font-bold flex items-center gap-3 text-white"></div>
+        <div id="toastContent" class="px-8 py-4 rounded-2xl shadow-2xl font-bold text-white"></div>
     </div>
 
     <div id="loginPage" class="fixed inset-0 z-[150] bg-slate-950 flex items-center justify-center">
         <div class="bg-white p-12 rounded-[2.5rem] shadow-2xl w-full max-w-md">
             <div class="text-center mb-10">
                 <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 font-black">S</div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">StockMaster</h1>
-                <p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">EMSI Enterprise v4.9.1</p>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">StockMaster</h1>
+                <p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">EMSI Excellence v4.1</p>
             </div>
             <form id="loginForm" class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identifiant (admin)" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 transition">
-                <input type="password" id="passInput" placeholder="Mot de passe (admin)" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 transition">
+                <input type="text" id="userInput" placeholder="admin" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 font-bold">
+                <input type="password" id="passInput" placeholder="admin" required class="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-500 font-bold">
                 <button type="submit" class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition uppercase text-xs">Connexion</button>
             </form>
         </div>
     </div>
 
-    <aside id="sidebar" class="w-80 bg-slate-900 text-white flex flex-col hidden shadow-2xl">
-        <div class="p-8 border-b border-slate-800 tracking-tighter flex flex-col">
-            <span class="text-2xl font-black italic">STOCK<span class="text-indigo-500">MASTER</span></span>
-        </div>
-        <nav class="flex-1 p-6 space-y-2 overflow-y-auto mt-4">
-            <button onclick="router('dashboard')" data-nav="dashboard" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">📊 Dashboard</button>
-            <button onclick="router('produits')" data-nav="produits" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm">📦 Produits & Lots</button>
-            <button onclick="router('fournisseurs')" data-nav="fournisseurs" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm">🤝 SRM Fournisseurs</button>
-            <button onclick="router('mouvements')" data-nav="mouvements" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition text-sm font-bold text-amber-400">🔄 Audit & Traçabilité</button>
+    <aside id="sidebar" class="w-72 bg-slate-900 text-white flex flex-col hidden shadow-2xl">
+        <div class="p-8 border-b border-slate-800 font-black italic text-2xl tracking-tighter uppercase">STOCK<span class="text-indigo-500">MASTER</span></div>
+        <nav class="flex-1 p-6 space-y-2 mt-4" id="mainNav">
+            <button onclick="router('dashboard')" id="nav-dashboard" data-nav="dashboard" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">📊 Dashboard</button>
+            <button onclick="router('produits')" id="nav-produits" data-nav="produits" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">📦 Produits</button>
+            <button onclick="router('fournisseurs')" id="nav-fournisseurs" data-nav="fournisseurs" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">🤝 Fournisseurs</button>
+            <button onclick="router('entrepots')" id="nav-entrepots" data-nav="entrepots" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">🏠 Entrepôts</button>
+            <button onclick="router('commandes')" id="nav-commandes" data-nav="commandes" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">🛒 Commandes</button>
+            <button onclick="router('categories')" id="nav-categories" data-nav="categories" class="nav-link w-full text-left py-4 px-6 rounded-2xl hover:bg-slate-800 transition font-bold text-sm">🏷️ Catégories</button>
         </nav>
         <div class="p-8 border-t border-slate-800">
-            <button onclick="logout()" class="w-full bg-red-500/10 text-red-400 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-red-500 hover:text-white transition">Déconnexion</button>
+            <button onclick="logout()" id="nav-logout" class="w-full bg-red-500/10 text-red-400 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-red-500 hover:text-white transition">Déconnexion</button>
         </div>
     </aside>
 
     <main id="mainApp" class="flex-1 flex flex-col hidden overflow-hidden">
         <header class="h-24 bg-white border-b flex items-center justify-between px-12 z-10 glass">
-            <h2 id="pageTitle" class="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Dashboard</h2>
+            <div class="flex items-center gap-8">
+                <h2 id="pageTitle" class="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Dashboard</h2>
+                <select id="langSelect" onchange="applyLang(this.value)" class="bg-slate-100 border-none rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer">
+                    <option value="fr">🇫🇷 FR</option><option value="en">🇺🇸 EN</option><option value="ar">🇲🇦 AR</option>
+                </select>
+            </div>
             <div class="flex items-center gap-6">
-                <input type="text" id="globalSearch" onkeyup="searchTable()" placeholder="Rechercher..." class="bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-2.5 text-sm w-72 outline-none focus:border-indigo-300">
-                <div class="text-right border-l pl-6">
-                    <p id="currentUserDisplay" class="text-sm font-black leading-none"></p>
-                    <p id="currentRoleDisplay" class="text-[9px] font-bold text-indigo-500 uppercase mt-1"></p>
-                </div>
+                <input type="text" id="globalSearch" onkeyup="searchTable()" placeholder="Rechercher..." class="bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-2.5 text-sm w-64 outline-none focus:border-indigo-300 font-bold transition-all">
+                <p id="currentUserDisplay" class="text-sm font-black text-indigo-600 border-l pl-6">Admin EMSI</p>
             </div>
         </header>
-        <div id="viewArea" class="p-12 overflow-y-auto flex-1"></div>
+        <div id="viewArea" class="p-12 overflow-y-auto flex-1 bg-slate-50/50"></div>
     </main>
 
-    <div id="crudModal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center p-6 z-[160] backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg p-10">
-            <h3 id="modalTitle" class="text-2xl font-black mb-8">Action</h3>
-            <form id="crudForm" class="space-y-4">
-                <div id="dynamicInputs" class="space-y-4"></div>
-                <div class="flex justify-end gap-4 mt-10">
-                    <button type="button" onclick="closeModal()" class="font-bold text-slate-400">Annuler</button>
-                    <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-2xl shadow-xl">Confirmer</button>
-                </div>
-            </form>
-        </div>
+    <div id="modalContainer" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center p-6 z-[160] backdrop-blur-sm">
+        <div id="modalBox" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg p-10 animate-fade"></div>
     </div>
 
     <script>
         "use strict";
 
-        // --- 1. CONFIGURATION & DONNÉES ---
-        const DB_KEY = "sm_ent_v491"; // Changement de clé pour éviter les conflits
-        
-        const initialDB = {
-            produits: [
-                { id: 1, sku: "DELL-XPS", name: "Dell XPS 13", price: 15000, qty: 10, min: 5, sold: 12, batch: "LOT-001", supplierId: 1, status: 'actif', expiry: '2026-12-01' },
-                { id: 2, sku: "MAC-M2", name: "MacBook Air", price: 17000, qty: 2, min: 5, sold: 8, batch: "LOT-002", supplierId: 2, status: 'actif', expiry: '2027-01-01' }
-            ],
-            fournisseurs: [
-                { id: 1, name: "Dell Maghreb", reliability: 95, leadTime: 4 },
-                { id: 2, name: "Apple Morocco", reliability: 88, leadTime: 10 }
-            ],
-            mouvements: [],
-            users: [{ id: 1, user: "admin", pass: "admin", role: "ADMIN" }],
-            currentUser: null
+        // --- 1. DATA & I18N ---
+        let db = JSON.parse(localStorage.getItem("sm_v4_final")) || {
+            produits: [{ id: 1, sku: "LP-DELL", name: "Dell XPS 13", price: 15000, qty: 12, category: "PC" }],
+            fournisseurs: [{ id: 1, name: "Dell MA", contact: "0600000", rating: 90 }],
+            entrepots: [{ id: 1, name: "Casa Hub", location: "Casablanca", capacity: 5000 }],
+            commandes: [{ id: 1, date: "2024-05-10", supplier: "Dell MA", total: 15000, status: "Livré" }],
+            categories: [{ id: 1, name: "PC" }, { id: 2, name: "Accessoires" }]
+        };
+        const save = () => localStorage.setItem("sm_v4_final", JSON.stringify(db));
+
+        const i18n = {
+            fr: { 
+                dashboard: "📊 Dashboard", produits: "📦 Produits", fournisseurs: "🤝 Fournisseurs", entrepots: "🏠 Entrepôts", commandes: "🛒 Commandes", categories: "🏷️ Catégories", 
+                logout: "Déconnexion", search: "Rechercher...", valStock: "Valeur Stock", alerts: "Alerte Rupture", partners: "Partenaires",
+                sku: "Référence", name: "Nom", price: "Prix", qty: "Quantité", category: "Catégorie", contact: "Contact", rating: "Note", 
+                location: "Ville", capacity: "Capacité", date: "Date", supplier: "Fournisseur", total: "Total", status: "Statut",
+                add: "Ajouter", edit: "Modifier", delete: "Supprimer", cancel: "Annuler", save: "Enregistrer"
+            },
+            en: { 
+                dashboard: "📊 Dashboard", produits: "📦 Products", fournisseurs: "🤝 Suppliers", entrepots: "🏠 Warehouses", commandes: "🛒 Orders", categories: "🏷️ Categories", 
+                logout: "Logout", search: "Search...", valStock: "Stock Value", alerts: "Low Stock", partners: "Partners",
+                sku: "SKU", name: "Name", price: "Price", qty: "Qty", category: "Category", contact: "Contact", rating: "Rating", 
+                location: "Location", capacity: "Capacity", date: "Date", supplier: "Supplier", total: "Total", status: "Status",
+                add: "Add", edit: "Edit", delete: "Delete", cancel: "Cancel", save: "Save"
+            },
+            ar: { 
+                dashboard: "📊 لوحة القيادة", produits: "📦 المنتجات", fournisseurs: "🤝 الموردون", entrepots: "🏠 المستودعات", commandes: "🛒 الطلبيات", categories: "🏷️ الفئات", 
+                logout: "تسجيل الخروج", search: "بحث...", valStock: "قيمة المخزون", alerts: "تنبيه المخزون", partners: "شركاء",
+                sku: "الرمز", name: "الاسم", price: "السعر", qty: "الكمية", category: "الفئة", contact: "الاتصال", rating: "التقييم", 
+                location: "الموقع", capacity: "السعة", date: "التاريخ", supplier: "المورد", total: "المجموع", status: "الحالة",
+                add: "إضافة", edit: "تعديل", delete: "حذف", cancel: "إلغاء", save: "حفظ"
+            }
         };
 
-        let db = JSON.parse(localStorage.getItem(DB_KEY)) || initialDB;
+        let currentPage = 1;
+        const itemsPerPage = 5;
+        let currentSort = { key: null, asc: true };
+        let charts = {};
 
-        const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
-
-        const notify = (msg, type='success') => {
-            const t = document.getElementById('toast');
-            const c = document.getElementById('toastContent');
-            c.innerText = msg;
-            c.className = `${type === 'success' ? 'bg-indigo-600' : 'bg-red-600'} px-8 py-4 rounded-2xl shadow-2xl font-bold text-white`;
-            t.classList.remove('translate-x-[150%]');
-            setTimeout(() => t.classList.add('translate-x-[150%]'), 3000);
-        };
-
-        const logAction = (type, details, sku = "N/A") => {
-            db.mouvements.unshift({ id: Date.now(), date: new Date().toLocaleString(), user: db.currentUser.user, type, details, sku });
-            save();
-        };
-
-        // --- 2. AUTHENTIFICATION ---
-        document.getElementById('loginForm').onsubmit = (e) => {
-            e.preventDefault();
-            const u = document.getElementById('userInput').value;
-            const p = document.getElementById('passInput').value;
-            const found = db.users.find(x => x.user === u && x.pass === p);
-            if (found) {
-                db.currentUser = found;
-                initApp();
-            } else { notify("Identifiants incorrects", "error"); }
-        };
-
-        function logout() { db.currentUser = null; location.reload(); }
-
-        function initApp() {
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('sidebar').classList.remove('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('currentUserDisplay').innerText = db.currentUser.user;
-            document.getElementById('currentRoleDisplay').innerText = db.currentUser.role;
-            router('dashboard');
+        // --- 2. CORE LOGIC ---
+        function applyLang(l) {
+            const t = i18n[l];
+            document.getElementById('appBody').dir = l === 'ar' ? 'rtl' : 'ltr';
+            document.getElementById('nav-dashboard').innerText = t.dashboard;
+            document.getElementById('nav-produits').innerText = t.produits;
+            document.getElementById('nav-fournisseurs').innerText = t.fournisseurs;
+            document.getElementById('nav-entrepots').innerText = t.entrepots;
+            document.getElementById('nav-commandes').innerText = t.commandes;
+            document.getElementById('nav-categories').innerText = t.categories;
+            document.getElementById('nav-logout').innerText = t.logout;
+            document.getElementById('globalSearch').placeholder = t.search;
+            router(document.querySelector('.nav-active').dataset.nav);
         }
 
-        // --- 3. ROUTEUR ---
         function router(page) {
+            currentPage = 1;
             const v = document.getElementById('viewArea');
-            document.getElementById('pageTitle').innerText = page.toUpperCase();
-            document.querySelectorAll('.nav-link').forEach(btn => {
-                btn.classList.toggle('nav-active', btn.dataset.nav === page);
-            });
+            document.querySelectorAll('.nav-link').forEach(b => b.classList.toggle('nav-active', b.dataset.nav === page));
+            const l = document.getElementById('langSelect').value;
+            document.getElementById('pageTitle').innerText = i18n[l][page] || page.toUpperCase();
             v.innerHTML = "";
-            if(page === 'dashboard') renderDashboard(v);
-            else if(page === 'produits') renderProducts(v);
-            else if(page === 'fournisseurs') renderSuppliers(v);
-            else if(page === 'mouvements') renderMouvements(v);
+            if (page === 'dashboard') renderDashboard(v);
+            else renderTablePage(page, v);
         }
 
-        // --- 4. DASHBOARD ---
+        // --- 3. DASHBOARD ---
         function renderDashboard(c) {
-            const totalVal = db.produits.reduce((acc, p) => acc + (p.price * p.qty), 0);
-            const critItems = db.produits.filter(p => p.qty <= p.min);
-            const ruptureRate = ((critItems.length / db.produits.length) * 100).toFixed(1);
-
+            const l = document.getElementById('langSelect').value;
+            const t = i18n[l];
+            const stats = {
+                val: db.produits.reduce((a,b)=>a+(b.price*b.qty),0),
+                alerts: db.produits.filter(p=>p.qty<5).length,
+                f: db.fournisseurs.length
+            };
             c.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-indigo-500">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valeur Stock</p>
-                        <h4 class="text-3xl font-black mt-2">${totalVal.toLocaleString()} DH</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 animate-fade">
+                    <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-100">
+                        <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">${t.valStock}</p>
+                        <h4 class="text-3xl font-black mt-1">${stats.val.toLocaleString()} DH</h4>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-red-500 ${critItems.length > 0 ? 'critical-glow' : ''}">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux de Rupture</p>
-                        <h4 class="text-3xl font-black text-red-600 mt-2">${ruptureRate}%</h4>
+                    <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-100">
+                        <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">${t.alerts}</p>
+                        <h4 class="text-3xl font-black mt-1">${stats.alerts} Unités</h4>
                     </div>
-                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-8 border-emerald-500">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Ventes</p>
-                        <h4 class="text-3xl font-black text-emerald-600 mt-2">${db.produits.reduce((a,b)=>a+b.sold,0)} Units</h4>
+                    <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-100">
+                        <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">${t.partners}</p>
+                        <h4 class="text-3xl font-black mt-1">${stats.f} Partenaires</h4>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[400px]">
-                    <div class="bg-white p-10 rounded-[2.5rem] shadow-sm"><canvas id="ch1"></canvas></div>
-                    <div class="bg-white p-10 rounded-[2.5rem] shadow-sm"><canvas id="ch2"></canvas></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
+                    <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm h-[400px]"><canvas id="ch1"></canvas></div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm h-[400px]"><canvas id="ch2"></canvas></div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm h-[400px]"><canvas id="ch3"></canvas></div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm h-[400px]"><canvas id="ch4"></canvas></div>
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm h-[400px]"><canvas id="ch5"></canvas></div>
                 </div>`;
-            
+
             setTimeout(() => {
-                new Chart(document.getElementById('ch1'), { type:'bar', data: { labels: db.produits.map(p=>p.sku), datasets:[{label:'Stock', data: db.produits.map(p=>p.qty), backgroundColor:'#6366f1'}] } });
-                new Chart(document.getElementById('ch2'), { type:'doughnut', data: { labels: ['Sain','Alerte'], datasets:[{data:[db.produits.length - critItems.length, critItems.length], backgroundColor:['#10b981','#ef4444']}] } });
+                const opt = (title) => ({ responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: title, font: {size: 14, weight: 'bold'} } } });
+                Object.values(charts).forEach(ch => ch.destroy());
+                charts.c1 = new Chart(document.getElementById('ch1'), { type: 'bar', data: { labels: db.produits.map(p=>p.sku), datasets: [{ label: t.qty, data: db.produits.map(p=>p.qty), backgroundColor: '#6366f1' }] }, options: opt(t.produits) });
+                charts.c2 = new Chart(document.getElementById('ch2'), { type: 'line', data: { labels: ['Jan','Fév','Mar'], datasets: [{ label: 'Ventes', data: [12, 25, 18], borderColor: '#6366f1' }] }, options: opt('Tendances') });
+                charts.c3 = new Chart(document.getElementById('ch3'), { type: 'doughnut', data: { labels: ['Ok','Low'], datasets: [{ data: [db.produits.length-stats.alerts, stats.alerts], backgroundColor: ['#10b981','#f43f5e'] }] }, options: opt(t.alerts) });
+                charts.c4 = new Chart(document.getElementById('ch4'), { type: 'pie', data: { labels: db.categories.map(c=>c.name), datasets: [{ data: [10, 5], backgroundColor: ['#818cf8','#fbbf24'] }] }, options: opt(t.categories) });
+                charts.c5 = new Chart(document.getElementById('ch5'), { type: 'radar', data: { labels: [t.price, t.rating, t.capacity], datasets: [{ label: 'Score', data: [80, 90, 70], backgroundColor: 'rgba(99, 102, 241, 0.2)' }] }, options: opt('Audit') });
             }, 100);
         }
 
-        // --- 5. PRODUITS ---
-        function renderProducts(c) {
+        // --- 4. TABLE VIEW (PAGINATION + SORTING) ---
+        function renderTablePage(entity, c) {
+            const l = document.getElementById('langSelect').value;
+            const t = i18n[l];
+            let data = [...db[entity]];
+
+            if (currentSort.key) {
+                data.sort((a, b) => {
+                    let valA = a[currentSort.key], valB = b[currentSort.key];
+                    return currentSort.asc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+                });
+            }
+
+            const totalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+            const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+            const headers = Object.keys(db[entity][0] || {}).filter(k => k !== 'id');
+
             c.innerHTML = `
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm animate-fade">
                     <div class="flex justify-between items-center mb-10">
-                        <h3 class="font-black text-slate-800 text-xl italic uppercase underline decoration-indigo-200">Catalogue Produits</h3>
-                        <button onclick="openAddProduct()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black text-xs shadow-lg shadow-indigo-100">+ Nouveau Lot</button>
+                        <h3 class="font-black text-xl italic uppercase underline decoration-indigo-200 decoration-4">${t[entity]}</h3>
+                        <div class="flex gap-4">
+                            <button onclick="exportCSV('${entity}')" class="bg-slate-100 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest">CSV</button>
+                            <button onclick="openForm('${entity}')" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest">+ ${t.add}</button>
+                        </div>
                     </div>
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b">
-                            <tr><th class="p-4">SKU/Lot</th><th class="p-4">Stock</th><th class="p-4">Vendus</th><th class="p-4">Prix</th><th class="p-4">Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            ${db.produits.map(p => `
-                                <tr class="border-b text-sm transition hover:bg-slate-50">
-                                    <td class="p-4"><p class="font-black">${p.sku}</p><p class="text-[10px] text-slate-400">${p.batch}</p></td>
-                                    <td class="p-4"><span class="px-3 py-1 rounded-full font-black text-[10px] ${p.qty <= p.min ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}">${p.qty}</span></td>
-                                    <td class="p-4 font-bold">${p.sold}</td>
-                                    <td class="p-4 font-bold text-slate-400">${p.price.toLocaleString()} DH</td>
-                                    <td class="p-4 space-x-2">
-                                        <button onclick="sellOne(${p.id})" class="text-indigo-600 font-black text-[10px] uppercase">Vendre</button>
-                                        <button onclick="deleteProd(${p.id})" class="text-red-400 font-black text-[10px] uppercase">Suppr.</button>
-                                    </td>
-                                </tr>`).join('')}
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 border-b">
+                                <tr>
+                                    ${headers.map(h => `<th class="p-4 cursor-pointer hover:text-indigo-600" onclick="handleSort('${entity}','${h}')">${t[h] || h} ${currentSort.key === h ? (currentSort.asc ? '▲' : '▼') : '↕'}</th>`).join('')}
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${paginatedData.map(item => `
+                                    <tr class="border-b text-sm hover:bg-slate-50 transition">
+                                        ${headers.map(h => `<td class="p-4 font-bold">${item[h]}</td>`).join('')}
+                                        <td class="p-4 text-right space-x-3">
+                                            <button onclick="showDetails('${entity}', ${item.id})" class="text-indigo-600 text-[10px] font-black uppercase hover:underline">Details</button>
+                                            <button onclick="openForm('${entity}', ${item.id})" class="text-amber-500 text-[10px] font-black uppercase hover:underline">${t.edit}</button>
+                                            <button onclick="confirmDelete('${entity}', ${item.id})" class="text-red-400 text-[10px] font-black uppercase hover:underline">${t.delete}</button>
+                                        </td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-between items-center mt-10">
+                        <p class="text-xs font-bold text-slate-400">Page ${currentPage} / ${totalPages}</p>
+                        <div class="flex gap-2">
+                            <button onclick="changePage('${entity}', -1)" ${currentPage === 1 ? 'disabled' : ''} class="px-4 py-2 border-2 rounded-xl text-xs font-black disabled:opacity-30 tracking-widest uppercase">Précédent</button>
+                            <button onclick="changePage('${entity}', 1)" ${currentPage === totalPages ? 'disabled' : ''} class="px-4 py-2 border-2 rounded-xl text-xs font-black disabled:opacity-30 tracking-widest uppercase">Suivant</button>
+                        </div>
+                    </div>
                 </div>`;
         }
 
-        function sellOne(id) {
-            const p = db.produits.find(x => x.id === id);
-            if(p.qty <= 0) return notify("Rupture de stock !", "error");
-            p.qty--; p.sold++;
-            logAction("VENTE", "Sortie 1 unité", p.sku);
-            router('produits'); notify("Vendu !");
+        // --- 5. CRUD ACTIONS ---
+        function handleSort(e, k) { currentSort = { key: k, asc: currentSort.key === k ? !currentSort.asc : true }; renderTablePage(e, document.getElementById('viewArea')); }
+        function changePage(e, d) { currentPage += d; renderTablePage(e, document.getElementById('viewArea')); }
+        function closeModal() { document.getElementById('modalContainer').classList.add('hidden'); }
+        function notify(m) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastContent').innerText = m;
+            t.classList.remove('translate-x-[150%]');
+            setTimeout(() => t.classList.add('translate-x-[150%]'), 3000);
         }
 
-        function openAddProduct() {
-            const inputs = document.getElementById('dynamicInputs');
-            inputs.innerHTML = `
-                <input type="text" id="p_sku" placeholder="SKU" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                <input type="text" id="p_batch" placeholder="Lot" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                <input type="number" id="p_qty" placeholder="Quantité" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                <input type="number" id="p_price" placeholder="Prix" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                <input type="number" id="p_min" placeholder="Seuil" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">`;
-            document.getElementById('crudModal').classList.remove('hidden');
-            document.getElementById('crudForm').onsubmit = (e) => {
+        function confirmDelete(entity, id) {
+            const l = document.getElementById('langSelect').value;
+            const t = i18n[l];
+            const modal = document.getElementById('modalContainer');
+            document.getElementById('modalBox').innerHTML = `
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">⚠️</div>
+                    <h3 class="text-2xl font-black mb-4 italic tracking-tighter uppercase">${t.delete} ?</h3>
+                    <p class="text-slate-400 mb-10 text-sm font-bold">Cette action est irréversible.</p>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="closeModal()" class="px-8 py-3 font-bold text-slate-400 uppercase">${t.cancel}</button>
+                        <button onclick="executeDelete('${entity}', ${id})" class="px-10 py-3 bg-red-600 text-white font-black rounded-2xl shadow-xl uppercase">${t.delete}</button>
+                    </div>
+                </div>`;
+            modal.classList.remove('hidden');
+        }
+
+        function executeDelete(e, id) {
+            db[e] = db[e].filter(x => x.id !== id);
+            save(); closeModal(); router(e); notify("Supprimé avec succès");
+        }
+
+        function openForm(entity, id = null) {
+            const l = document.getElementById('langSelect').value;
+            const t = i18n[l];
+            const modal = document.getElementById('modalContainer');
+            const box = document.getElementById('modalBox');
+            const existing = id ? db[entity].find(x => x.id === id) : null;
+            const fields = {
+                produits: [{n:'sku', t:'text'}, {n:'name', t:'text'}, {n:'price', t:'number'}, {n:'qty', t:'number'}, {n:'category', t:'text'}],
+                fournisseurs: [{n:'name', t:'text'}, {n:'contact', t:'text'}, {n:'rating', t:'number'}],
+                entrepots: [{n:'name', t:'text'}, {n:'location', t:'text'}, {n:'capacity', t:'number'}],
+                commandes: [{n:'date', t:'date'}, {n:'supplier', t:'text'}, {n:'total', t:'number'}, {n:'status', t:'text'}],
+                categories: [{n:'name', t:'text'}]
+            };
+
+            box.innerHTML = `
+                <h3 class="text-2xl font-black mb-8 italic uppercase underline decoration-indigo-200">${id ? t.edit : t.add} ${t[entity]}</h3>
+                <form id="activeForm" class="space-y-4">
+                    ${fields[entity].map(f => `
+                        <div>
+                            <label class="text-[9px] font-black uppercase text-slate-400 ml-1">${t[f.n] || f.n}</label>
+                            <input type="${f.t}" id="f_${f.n}" value="${existing ? existing[f.n] : ''}" required 
+                                class="w-full border-2 p-4 rounded-2xl outline-none focus:border-indigo-500 bg-slate-50 font-bold transition-all">
+                        </div>
+                    `).join('')}
+                    <div class="flex justify-end gap-4 mt-10">
+                        <button type="button" onclick="closeModal()" class="font-bold text-slate-400 uppercase">${t.cancel}</button>
+                        <button type="submit" class="px-10 py-3 bg-indigo-600 text-white font-black rounded-2xl shadow-xl uppercase">${t.save}</button>
+                    </div>
+                </form>`;
+            
+            modal.classList.remove('hidden');
+            document.getElementById('activeForm').onsubmit = (e) => {
                 e.preventDefault();
-                db.produits.push({
-                    id: Date.now(), sku: document.getElementById('p_sku').value,
-                    batch: document.getElementById('p_batch').value,
-                    qty: parseInt(document.getElementById('p_qty').value),
-                    price: parseInt(document.getElementById('p_price').value),
-                    min: parseInt(document.getElementById('p_min').value),
-                    sold: 0, status: 'actif'
+                const newItem = { id: id || Date.now() };
+                fields[entity].forEach(f => {
+                    const v = document.getElementById(`f_${f.n}`).value;
+                    newItem[f.n] = (f.t === 'number') ? parseFloat(v) : v;
                 });
-                logAction("AJOUT", "Entrée nouveau produit");
-                closeModal(); router('produits');
+                if (id) {
+                    const idx = db[entity].findIndex(x => x.id === id);
+                    db[entity][idx] = newItem;
+                } else db[entity].push(newItem);
+                save(); closeModal(); router(entity); notify(t.save + " !");
             };
         }
 
-        // --- 6. FOURNISSEURS ---
-        function renderSuppliers(c) {
-            c.innerHTML = `
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
-                    <h3 class="font-black text-slate-800 uppercase text-xl mb-10 italic">Performance Fournisseurs</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        ${db.fournisseurs.map(f => `
-                            <div class="p-8 border-2 rounded-3xl">
-                                <h4 class="text-lg font-black">${f.name}</h4>
-                                <p class="text-xs text-slate-400 mt-2 uppercase font-black">Fiabilité : ${f.reliability}%</p>
-                                <div class="mt-4 bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-indigo-600 h-full" style="width:${f.reliability}%"></div>
-                                </div>
-                            </div>`).join('')}
+        function exportCSV(e) {
+            if(db[e].length === 0) return notify("Tableau vide !");
+            const csv = [Object.keys(db[e][0]).join(","), ...db[e].map(r => Object.values(r).join(","))].join("\n");
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `StockMaster_${e}.csv`; a.click();
+        }
+
+        function showDetails(e, id) {
+            const l = document.getElementById('langSelect').value;
+            const t = i18n[l];
+            const item = db[e].find(x => x.id === id);
+            const v = document.getElementById('viewArea');
+            v.innerHTML = `
+                <div class="bg-white p-12 rounded-[2.5rem] shadow-sm max-w-2xl mx-auto animate-fade">
+                    <button onclick="router('${e}')" class="mb-8 text-indigo-600 font-bold uppercase tracking-widest hover:translate-x-[-5px] transition-transform inline-block">← ${t.cancel}</button>
+                    <div class="flex justify-between items-center mb-10">
+                        <h2 class="text-3xl font-black italic underline decoration-indigo-200 decoration-8">${item.name || item.sku || 'Fiche'}</h2>
+                        <button onclick="exportPDF('${e}', ${id})" class="bg-red-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black shadow-xl uppercase tracking-widest">Export PDF</button>
+                    </div>
+                    <div class="space-y-4 border-t pt-8">
+                        ${Object.entries(item).filter(([k])=>k!=='id').map(([k,v]) => `<div class="flex justify-between border-b pb-2 items-center"><span class="text-slate-400 text-[10px] font-bold uppercase">${t[k] || k}</span><span class="font-black">${v}</span></div>`).join('')}
                     </div>
                 </div>`;
         }
 
-        // --- 7. MOUVEMENTS ---
-        function renderMouvements(c) {
-            c.innerHTML = `
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm">
-                    <h3 class="font-black text-slate-800 uppercase text-xl mb-10 italic">Audit Système</h3>
-                    <div class="space-y-3">
-                        ${db.mouvements.map(m => `
-                            <div class="p-4 bg-slate-50 rounded-2xl flex justify-between items-center border-l-4 ${m.type === 'VENTE' ? 'border-red-500' : 'border-indigo-500'}">
-                                <div><p class="text-xs font-black">${m.date}</p><p class="text-sm font-bold">${m.type} : ${m.details}</p></div>
-                                <span class="text-[10px] font-black uppercase text-indigo-600">${m.sku}</span>
-                            </div>`).join('')}
-                    </div>
-                </div>`;
+        function exportPDF(e, id) {
+            const item = db[e].find(x => x.id === id);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(20); doc.text(`FICHE : ${e.toUpperCase()}`, 20, 20);
+            doc.setFontSize(10);
+            Object.entries(item).filter(([k])=>k!=='id').forEach(([k,v], i) => doc.text(`${k.toUpperCase()} : ${v}`, 20, 40 + (i*10)));
+            doc.save(`StockMaster_${e}_${id}.pdf`);
         }
 
-        function closeModal() { document.getElementById('crudModal').classList.add('hidden'); }
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            if (document.getElementById('userInput').value === "admin") {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                router('dashboard');
+            }
+        };
+        function logout() { location.reload(); }
         function searchTable() {
-            const v = document.getElementById('globalSearch').value.toLowerCase();
-            document.querySelectorAll("tbody tr").forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none");
+            const term = document.getElementById('globalSearch').value.toLowerCase();
+            document.querySelectorAll("tbody tr").forEach(tr => tr.style.display = tr.innerText.toLowerCase().includes(term) ? "" : "none");
         }
-        function deleteProd(id) { if(confirm("Supprimer ?")) { db.produits = db.produits.filter(p=>p.id!==id); save(); router('produits'); } }
-
     </script>
 </body>
 </html>
